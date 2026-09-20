@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>ERuDict</RootNamespace>
+    <AssemblyName>ERuDict</AssemblyName>
+    <ApplicationIcon>assets\app.ico</ApplicationIcon>
+    <ApplicationTitle>ERuDict</ApplicationTitle>
+    <Product>ERuDict</Product>
+    <Description>English–Russian translator for selected text</Description>
+    <Version>1.2.0</Version>
+    <Authors>ERuDict</Authors>
+    <DefaultItemExcludes>$(DefaultItemExcludes);tools/**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="assets\app.ico" />
+    <None Include="assets\peraclad-icon.png" />
+    <Content Include="dict\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+</Project>

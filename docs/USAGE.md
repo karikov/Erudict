@@ -8,7 +8,7 @@ ERuDict (English–Russian Dictionary) — фоновый переводчик �
 
 ### Установка
 
-Скопируйте `ERuDict.exe` в любую папку и запустите. Устанавливать .NET не нужно (self-contained сборка). В трее появится иконка. Файл настроек `appsettings.json` создаётся рядом с программой при первом запуске.
+Скопируйте `ERuDict.exe` и папку `dict` в любую папку и запустите. Устанавливать .NET не нужно. В трее появится иконка. Файл настроек `appsettings.json` создаётся рядом с программой при первом запуске.
 
 ### Как перевести текст
 
@@ -68,7 +68,7 @@ ERuDict (English–Russian Dictionary) — фоновый переводчик �
 
 ### Install
 
-Copy `ERuDict.exe` anywhere and run it. No .NET install is required for the self-contained build. A tray icon appears. `appsettings.json` is created next to the executable on first run.
+Copy `ERuDict.exe` and the `dict` folder anywhere and run the program. No .NET install is required. A tray icon appears. `appsettings.json` is created next to the executable on first run.
 
 ### Translate text
 

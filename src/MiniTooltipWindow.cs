@@ -1,199 +1,176 @@
 namespace ERuDict;
 
-internal sealed class MiniTooltipWindow : Form
+internal sealed class MiniTooltipWindow : UiWindow
 {
-    private const int CornerRadius = 4;
-    private const int MaxTextWidth = 420;
+    private const int TimerHide = 1;
+    private const int TimerEsc = 2;
 
     private readonly Settings _settings;
-    private readonly Label _translationLabel;
-    private readonly Label _directionLabel;
-    private readonly Button _expandButton;
-    private readonly System.Windows.Forms.Timer _hideTimer;
-    private readonly System.Windows.Forms.Timer _escTimer;
-
     private string _sourceText = "";
     private string _translation = "";
-    private string? _directionLabelText;
-    private bool _isError;
+    private string? _direction;
+    private bool _error;
+    private UiNative.Rect _textRect;
+    private UiNative.Rect _directionRect;
+    private UiNative.Rect _buttonRect;
 
     public event Action<string, string, bool, string?>? ExpandRequested;
 
-    public MiniTooltipWindow(Settings settings)
+    public MiniTooltipWindow(Settings settings, nint owner)
     {
         _settings = settings;
-
-        ShowInTaskbar = false;
-        FormBorderStyle = FormBorderStyle.None;
-        StartPosition = FormStartPosition.Manual;
-        TopMost = true;
-        BackColor = Theme.Background;
-        ForeColor = Theme.Text;
-        Size = new Size(280, 72);
-        DoubleBuffered = true;
-
-        var accent = new Panel
-        {
-            Dock = DockStyle.Left,
-            Width = 4,
-            BackColor = Theme.Accent
-        };
-
-        _translationLabel = new Label
-        {
-            AutoSize = true,
-            MaximumSize = new Size(MaxTextWidth, 0),
-            Font = Theme.Translation,
-            ForeColor = Theme.Text,
-            BackColor = Theme.Background,
-            Location = new Point(16, 12)
-        };
-
-        _directionLabel = new Label
-        {
-            AutoSize = true,
-            Font = Theme.UiSmall,
-            ForeColor = Theme.Muted,
-            BackColor = Theme.Background
-        };
-
-        _expandButton = Theme.CreateButton(I18n.Expand, accent: false);
-        _expandButton.Size = new Size(118, 26);
-        _expandButton.Font = Theme.UiSmall;
-        _expandButton.MouseDown += (_, e) =>
-        {
-            if (e.Button == MouseButtons.Left)
-            {
-                Expand();
-            }
-        };
-
-        Controls.Add(_translationLabel);
-        Controls.Add(_directionLabel);
-        Controls.Add(_expandButton);
-        Controls.Add(accent);
-
-        MouseDown += (_, _) => HideTooltip();
-
-        _hideTimer = new System.Windows.Forms.Timer();
-        _hideTimer.Tick += (_, _) => HideTooltip();
-        _escTimer = new System.Windows.Forms.Timer { Interval = 80 };
-        _escTimer.Tick += (_, _) =>
-        {
-            if (Visible && Win32.IsKeyDown(Win32.VkEscape))
-            {
-                HideTooltip();
-            }
-        };
-    }
-
-    protected override bool ShowWithoutActivation => true;
-
-    protected override CreateParams CreateParams
-    {
-        get
-        {
-            const int WsExNoActivate = 0x08000000;
-            const int WsExToolWindow = 0x00000080;
-            const int WsExTopMost = 0x00000008;
-            var cp = base.CreateParams;
-            cp.ExStyle |= WsExNoActivate | WsExToolWindow | WsExTopMost;
-            return cp;
-        }
+        Create(
+            "",
+            UiNative.WS_POPUP | UiNative.WS_CLIPCHILDREN,
+            UiNative.WS_EX_TOPMOST | UiNative.WS_EX_TOOLWINDOW | UiNative.WS_EX_NOACTIVATE,
+            0,
+            0,
+            UiDpi.S(280),
+            UiDpi.S(72),
+            owner);
     }
 
     public void ShowTranslation(string sourceText, string? translation, bool isError, string? directionLabel)
     {
         _sourceText = sourceText;
-        _translation = translation ?? "";
-        _directionLabelText = directionLabel;
-        _isError = isError;
+        _translation = string.IsNullOrWhiteSpace(translation) ? "—" : translation;
+        _direction = directionLabel;
+        _error = isError;
 
-        _translationLabel.Text = string.IsNullOrWhiteSpace(_translation) ? "—" : _translation;
-        _translationLabel.ForeColor = isError ? Theme.Error : Theme.Text;
-        _expandButton.Text = I18n.Expand;
-        _directionLabel.Text = directionLabel ?? "";
-        _directionLabel.Visible = !string.IsNullOrWhiteSpace(directionLabel);
-
-        if (_settings.CopyToClipboard && !isError && !string.IsNullOrWhiteSpace(_translation))
+        if (_settings.CopyToClipboard && !isError && !string.IsNullOrWhiteSpace(translation))
         {
-            ClipboardManager.SetText(_translation);
+            ClipboardManager.SetText(translation);
         }
 
-        LayoutTooltip();
-        PlaceNearCursor();
-        Show();
-        Update();
-        this.RoundRegion(CornerRadius);
-
-        _escTimer.Start();
-        _hideTimer.Stop();
+        var size = Measure();
+        UiNative.PlaceNearCursor(Hwnd, size.Width, size.Height);
+        UiNative.RoundWindow(Hwnd, size.Width, size.Height, UiDpi.S(8));
+        ShowWithoutActivation();
+        UiNative.InvalidateRect(Hwnd, 0, true);
+        UiNative.SetTimer(Hwnd, TimerEsc, 80, 0);
+        UiNative.KillTimer(Hwnd, TimerHide);
         if (_settings.PopupTimeoutSec > 0)
         {
-            _hideTimer.Interval = _settings.PopupTimeoutSec * 1000;
-            _hideTimer.Start();
+            UiNative.SetTimer(Hwnd, TimerHide, (uint)(_settings.PopupTimeoutSec * 1000), 0);
         }
     }
 
     public void HideTooltip()
     {
-        _hideTimer.Stop();
-        _escTimer.Stop();
-        Hide();
+        UiNative.KillTimer(Hwnd, TimerHide);
+        UiNative.KillTimer(Hwnd, TimerEsc);
+        HideWindow();
     }
 
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            _hideTimer.Dispose();
-            _escTimer.Dispose();
-        }
-
-        base.Dispose(disposing);
-    }
-
-    private void Expand()
+    protected override bool OnClose()
     {
         HideTooltip();
-        ExpandRequested?.Invoke(_sourceText, _translation, _isError, _directionLabelText);
+        return true;
     }
 
-    private void LayoutTooltip()
+    protected override void OnTimer(nint id)
     {
-        _translationLabel.MaximumSize = new Size(MaxTextWidth, 0);
-        _translationLabel.Location = new Point(16, 12);
-
-        var textRight = _translationLabel.Right;
-        var textBottom = _translationLabel.Bottom;
-        var buttonY = Math.Max(textBottom + 8, 40);
-        _expandButton.Location = new Point(Math.Max(16, textRight - _expandButton.Width), buttonY);
-        _directionLabel.Location = new Point(16, _expandButton.Top + 5);
-
-        var footerWidth = 16 + _directionLabel.PreferredWidth + 12 + _expandButton.Width + 16;
-        var width = Math.Max(Math.Max(_translationLabel.Right + 16, footerWidth), 220);
-        width = Math.Min(width, MaxTextWidth + 40);
-        var height = _expandButton.Bottom + 12;
-        Size = new Size(width, height);
-        _expandButton.Location = new Point(Width - 16 - _expandButton.Width, _expandButton.Top);
+        if (id == TimerHide || id == TimerEsc && Win32.IsKeyDown(Win32.VkEscape))
+        {
+            HideTooltip();
+        }
     }
 
-    private void PlaceNearCursor()
+    protected override void OnClick(int x, int y)
     {
-        var cursor = Cursor.Position;
-        var area = Screen.FromPoint(cursor).WorkingArea;
-        var x = cursor.X + 16;
-        var y = cursor.Y + 16;
-        if (x + Width > area.Right)
+        if (_buttonRect.Contains(x, y))
         {
-            x = cursor.X - Width - 16;
+            HideTooltip();
+            ExpandRequested?.Invoke(_sourceText, _translation == "—" ? "" : _translation, _error, _direction);
+            return;
         }
 
-        if (y + Height > area.Bottom)
+        HideTooltip();
+    }
+
+    protected override nint HandleMessage(uint message, nint wParam, nint lParam)
+    {
+        if (message == UiNative.WM_SETCURSOR && _buttonRect.Width > 0)
         {
-            y = cursor.Y - Height - 16;
+            UiNative.GetCursorPos(out var screen);
+            UiNative.GetWindowRect(Hwnd, out var window);
+            var x = screen.X - window.Left;
+            var y = screen.Y - window.Top;
+            if (_buttonRect.Contains(x, y))
+            {
+                UiNative.SetCursor(UiNative.LoadCursor(0, 32649));
+                return 1;
+            }
         }
 
-        Location = new Point(Math.Max(area.Left, x), Math.Max(area.Top, y));
+        return base.HandleMessage(message, wParam, lParam);
+    }
+
+    protected override void OnPaint(nint hdc)
+    {
+        UiNative.GetClientRect(Hwnd, out var client);
+        var accent = new UiNative.Rect { Left = 0, Top = 0, Right = UiDpi.S(4), Bottom = client.Bottom };
+        Fill(hdc, accent, UiTheme.AccentBrush);
+        var border = client;
+        UiNative.FrameRect(hdc, ref border, UiTheme.BorderBrush);
+        DrawText(hdc, _translation, UiTheme.TranslationFont, _error ? UiTheme.Error : UiTheme.Text, _textRect, UiNative.DT_WORDBREAK);
+        if (!string.IsNullOrWhiteSpace(_direction))
+        {
+            DrawText(hdc, _direction, UiTheme.SmallFont, UiTheme.Muted, _directionRect, UiNative.DT_SINGLELINE | UiNative.DT_VCENTER);
+        }
+
+        Fill(hdc, _buttonRect, UiTheme.SurfaceAltBrush);
+        var buttonBorder = _buttonRect;
+        UiNative.FrameRect(hdc, ref buttonBorder, UiTheme.BorderBrush);
+        DrawText(hdc, I18n.Expand, UiTheme.SmallFont, UiTheme.Text, _buttonRect, UiNative.DT_CENTER | UiNative.DT_VCENTER | UiNative.DT_SINGLELINE);
+    }
+
+    private (int Width, int Height) Measure()
+    {
+        var dc = UiNative.GetDC(Hwnd);
+        try
+        {
+            var text = UiNative.MeasureText(dc, _translation, UiTheme.TranslationFont, UiDpi.S(420), UiNative.DT_WORDBREAK);
+            var textWidth = Math.Max(text.Width, UiDpi.S(40));
+            var textHeight = Math.Max(text.Height, UiDpi.S(20));
+            _textRect = new UiNative.Rect
+            {
+                Left = UiDpi.S(16),
+                Top = UiDpi.S(12),
+                Right = UiDpi.S(16) + textWidth,
+                Bottom = UiDpi.S(12) + textHeight
+            };
+
+            var buttonWidth = UiDpi.S(118);
+            var buttonHeight = UiDpi.S(26);
+            var directionWidth = 0;
+            if (!string.IsNullOrWhiteSpace(_direction))
+            {
+                directionWidth = UiNative.MeasureText(dc, _direction, UiTheme.SmallFont, UiDpi.S(240), UiNative.DT_SINGLELINE).Width;
+            }
+
+            var footerWidth = UiDpi.S(16) + directionWidth + UiDpi.S(12) + buttonWidth + UiDpi.S(16);
+            var width = Math.Min(UiDpi.S(460), Math.Max(Math.Max(_textRect.Right + UiDpi.S(16), footerWidth), UiDpi.S(220)));
+            var buttonTop = _textRect.Bottom + UiDpi.S(8);
+            _buttonRect = new UiNative.Rect
+            {
+                Left = width - UiDpi.S(16) - buttonWidth,
+                Top = buttonTop,
+                Right = width - UiDpi.S(16),
+                Bottom = buttonTop + buttonHeight
+            };
+            _directionRect = new UiNative.Rect
+            {
+                Left = UiDpi.S(16),
+                Top = buttonTop,
+                Right = _buttonRect.Left - UiDpi.S(8),
+                Bottom = _buttonRect.Bottom
+            };
+            return (width, _buttonRect.Bottom + UiDpi.S(12));
+        }
+        finally
+        {
+            UiNative.ReleaseDC(Hwnd, dc);
+        }
     }
 }

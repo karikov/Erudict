@@ -6,7 +6,6 @@ internal static class Autostart
 {
     private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string ValueName = "ERuDict";
-    private const string LegacyValueName = "Peraclad";
 
     public static void Apply(bool enabled)
     {
@@ -17,11 +16,6 @@ internal static class Autostart
             if (key is null)
             {
                 return;
-            }
-
-            if (key.GetValue(LegacyValueName) is not null)
-            {
-                key.DeleteValue(LegacyValueName, throwOnMissingValue: false);
             }
 
             if (enabled)

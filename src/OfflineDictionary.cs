@@ -2,13 +2,12 @@ using System.Text.RegularExpressions;
 
 namespace ERuDict;
 
-internal static class OfflineDictionary
+internal static partial class OfflineDictionary
 {
     public const int MaxWords = 15;
 
-    private static readonly Regex WordPattern = new(
-        @"[\p{L}\p{M}]+(?:['’\-][\p{L}\p{M}]+)*",
-        RegexOptions.Compiled);
+    [GeneratedRegex(@"[\p{L}\p{M}]+(?:['’\-][\p{L}\p{M}]+)*")]
+    private static partial Regex WordPattern();
 
     private static readonly object Gate = new();
     private static Dictionary<string, string>? _enRu;
@@ -23,7 +22,7 @@ internal static class OfflineDictionary
             throw new InvalidOperationException(I18n.OfflineDictionaryMissing);
         }
 
-        var matches = WordPattern.Matches(text);
+        var matches = WordPattern().Matches(text);
         if (matches.Count == 0)
         {
             throw new InvalidOperationException(I18n.OfflineNoWords);

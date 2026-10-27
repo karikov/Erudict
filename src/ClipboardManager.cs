@@ -127,9 +127,7 @@ internal static class ClipboardManager
         {
             try
             {
-                using var box = new RichTextBox { DetectUrls = false };
-                box.Rtf = trimmed;
-                return box.Text;
+                return RtfPlainText.Convert(trimmed);
             }
             catch (Exception ex)
             {

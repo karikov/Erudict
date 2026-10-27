@@ -11,8 +11,8 @@
 ## 2. Технологии
 
 - Язык: **C#**
-- Платформа: **.NET 8**, UI — WinForms (без внешних NuGet-зависимостей)
-- Сборка: самодостаточный один `exe` (`win-x64`, self-contained, single-file)
+- Платформа: **.NET 8**, UI — Win32, без внешних NuGet-зависимостей
+- Сборка: Native AOT, один `exe` для Windows x64. .NET на компьютере не нужен
 - Сеть: бесплатные неофициальные endpoint'ы Яндекс.Переводчика и Google Translate, без API-ключа
 - Интерфейс: русский и английский
 
@@ -81,9 +81,9 @@
 ## 4. Нефункциональные требования
 
 - Низкое потребление CPU/памяти в фоне.
-- Запуск без установки: один self-contained exe.
+- Запуск без установки: один exe, .NET на компьютере не нужен.
 - Автозагрузка через `HKCU\...\Run` (`ERuDict`).
-- Лог: `erudict.log` рядом с exe (не во временной папке single-file).
+- Лог: `erudict.log` рядом с exe.
 - Интерфейс на русском или английском.
 
 ## 5. Архитектура
@@ -92,7 +92,7 @@
 |---|---|
 | `Program` | Точка входа, один экземпляр, язык UI |
 | `I18n` | Строки интерфейса ru/en |
-| `TrayApp` | Трей, меню, оркестрация |
+| `AppHost` | Трей, меню, оркестрация |
 | `HotkeyManager` | Хук клавиатуры |
 | `ClipboardManager` / `NativeClipboard` | Захват выделения |
 | `Translator` | Выбор сервиса |
@@ -116,7 +116,7 @@
 ## 6. Сборка
 
 ```sh
-dotnet publish -c Release -p:PublishProfile=Win64SelfContained
+dotnet publish -c Release -p:PublishProfile=Win64NativeAot
 ```
 
-Результат: `bin/Release/publish/ERuDict.exe`.
+Результат: `bin/Release/publish-aot/ERuDict.exe`.

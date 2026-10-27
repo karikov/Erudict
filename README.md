@@ -21,19 +21,19 @@
 
 Нужен [.NET 8 SDK](https://dotnet.microsoft.com/download).
 
-Обычная сборка (нужен Desktop Runtime на целевом ПК):
+Обычная сборка для проверки на этой машине (нужен .NET 8 Desktop Runtime):
 
 ```sh
 dotnet build -c Release
 ```
 
-Самодостаточный один файл (Windows x64, .NET внутри):
+Релиз — Native AOT, один exe для Windows x64, без установленного .NET:
 
 ```sh
-dotnet publish -c Release -p:PublishProfile=Win64SelfContained
+dotnet publish -c Release -p:PublishProfile=Win64NativeAot
 ```
 
-Результат: `bin/Release/publish/ERuDict.exe`.
+Результат: `bin/Release/publish-aot/ERuDict.exe`. Словари лежат рядом, в папке `dict`.
 
 ## Запуск
 

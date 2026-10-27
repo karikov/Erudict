@@ -1,6 +1,6 @@
 namespace ERuDict;
 
-internal sealed class SettingsDialog : Form
+internal sealed class SettingsDialog : UiWindow
 {
     private static readonly string[] Languages =
     {
@@ -10,187 +10,170 @@ internal sealed class SettingsDialog : Form
     };
 
     private readonly Settings _settings;
-    private readonly ComboBox _uiLanguageCombo;
-    private readonly ComboBox _languageCombo;
-    private readonly NumericUpDown _intervalBox;
-    private readonly NumericUpDown _timeoutBox;
-    private readonly ComboBox _hotkeyCombo;
-    private readonly ComboBox _translatorCombo;
-    private readonly CheckBox _copyCheck;
-    private readonly CheckBox _autostartCheck;
-    private readonly CheckBox _autoDirectionCheck;
+    private nint _uiLanguage;
+    private nint _language;
+    private nint _translator;
+    private nint _interval;
+    private nint _timeout;
+    private nint _hotkey;
+    private nint _copy;
+    private nint _autoDirection;
+    private nint _autostart;
 
-    public SettingsDialog(Settings settings)
+    public SettingsDialog(Settings settings, nint owner)
     {
         _settings = settings;
-        Text = I18n.SettingsTitle;
-        ClientSize = new Size(500, 500);
-        Theme.ApplyDialog(this);
-        Icon = Icon.ExtractAssociatedIcon(Environment.ProcessPath ?? Application.ExecutablePath);
+        var width = UiDpi.S(540);
+        var height = UiDpi.S(500);
+        Create(
+            I18n.SettingsTitle,
+            UiNative.WS_CAPTION | UiNative.WS_SYSMENU | UiNative.WS_CLIPCHILDREN,
+            UiNative.WS_EX_DLGMODALFRAME,
+            0,
+            0,
+            width,
+            height,
+            owner);
+        UiNative.ApplyDarkTitle(Hwnd);
+        UiNative.CenterOnWorkArea(Hwnd, width, height);
+    }
 
-        var layout = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            ColumnCount = 2,
-            RowCount = 11,
-            Padding = new Padding(18, 16, 18, 12)
-        };
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 46));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 54));
-        for (var i = 0; i < 9; i++)
-        {
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
-        }
+    public void ShowDialog() => ShowModal();
 
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+    protected override bool OnClose()
+    {
+        CloseModal();
+        return true;
+    }
 
-        _uiLanguageCombo = new ComboBox();
-        Theme.StyleCombo(_uiLanguageCombo);
-        _uiLanguageCombo.Items.AddRange(new object[] { I18n.UiLangSystem, I18n.UiLangRussian, I18n.UiLangEnglish });
-        _uiLanguageCombo.SelectedIndex = settings.UiLanguage switch
+    protected override void OnCreate()
+    {
+        UiNative.GetClientRect(Hwnd, out var client);
+        var labelX = UiDpi.S(18);
+        var controlX = UiDpi.S(250);
+        var labelW = UiDpi.S(220);
+        var controlW = Math.Max(UiDpi.S(160), client.Width - controlX - UiDpi.S(18));
+        var row = UiDpi.S(40);
+        var y = UiDpi.S(16);
+        var font = UiTheme.UiFont;
+
+        AddLabel(I18n.LabelUiLanguage, labelX, y, labelW, font);
+        _uiLanguage = Combo(controlX, y, controlW, font);
+        UiNative.ComboAdd(_uiLanguage, I18n.UiLangSystem);
+        UiNative.ComboAdd(_uiLanguage, I18n.UiLangRussian);
+        UiNative.ComboAdd(_uiLanguage, I18n.UiLangEnglish);
+        UiNative.ComboSelect(_uiLanguage, _settings.UiLanguage switch
         {
             "ru" => 1,
             "en" => 2,
             _ => 0
-        };
-        _uiLanguageCombo.Dock = DockStyle.Fill;
-
-        _languageCombo = new ComboBox();
-        Theme.StyleCombo(_languageCombo);
-        _languageCombo.Items.AddRange(Languages);
-        _languageCombo.SelectedItem = FindLanguageItem(settings.TargetLanguage);
-        _languageCombo.Dock = DockStyle.Fill;
-
-        _intervalBox = new NumericUpDown
-        {
-            Minimum = 150,
-            Maximum = 2000,
-            Increment = 50,
-            Value = settings.DoublePressIntervalMs,
-            Dock = DockStyle.Fill
-        };
-        Theme.StyleNumeric(_intervalBox);
-
-        _timeoutBox = new NumericUpDown
-        {
-            Minimum = 0,
-            Maximum = 120,
-            Value = settings.PopupTimeoutSec,
-            Dock = DockStyle.Fill
-        };
-        Theme.StyleNumeric(_timeoutBox);
-
-        _hotkeyCombo = new ComboBox();
-        Theme.StyleCombo(_hotkeyCombo);
-        _hotkeyCombo.Items.AddRange(new object[] { I18n.HotkeyDoubleCtrl, I18n.HotkeyCtrlShift });
-        _hotkeyCombo.SelectedIndex = settings.HotkeyMode == "ctrlShift" ? 1 : 0;
-        _hotkeyCombo.Dock = DockStyle.Fill;
-
-        _translatorCombo = new ComboBox();
-        Theme.StyleCombo(_translatorCombo);
-        _translatorCombo.Items.AddRange(new object[]
-        {
-            I18n.TranslatorAuto,
-            I18n.TranslatorYandex,
-            I18n.TranslatorGoogle
         });
-        _translatorCombo.SelectedIndex = settings.Translator switch
+
+        y += row;
+        AddLabel(I18n.LabelTargetLanguage, labelX, y, labelW, font);
+        _language = Combo(controlX, y, controlW, font);
+        foreach (var language in Languages)
+        {
+            UiNative.ComboAdd(_language, language);
+        }
+
+        UiNative.ComboSelect(_language, FindLanguageIndex(_settings.TargetLanguage));
+
+        y += row;
+        AddLabel(I18n.LabelTranslator, labelX, y, labelW, font);
+        _translator = Combo(controlX, y, controlW, font);
+        UiNative.ComboAdd(_translator, I18n.TranslatorAuto);
+        UiNative.ComboAdd(_translator, I18n.TranslatorYandex);
+        UiNative.ComboAdd(_translator, I18n.TranslatorGoogle);
+        UiNative.ComboSelect(_translator, _settings.Translator switch
         {
             "yandex" => 1,
             "google" => 2,
             _ => 0
-        };
-        _translatorCombo.Dock = DockStyle.Fill;
+        });
 
-        _copyCheck = new CheckBox { Text = I18n.CheckCopy, Checked = settings.CopyToClipboard };
-        Theme.StyleCheckBox(_copyCheck);
+        y += row;
+        AddLabel(I18n.LabelInterval, labelX, y, labelW, font);
+        _interval = Edit(controlX, y, UiDpi.S(120), _settings.DoublePressIntervalMs.ToString(), font);
 
-        _autostartCheck = new CheckBox { Text = I18n.CheckAutostart, Checked = settings.StartWithWindows };
-        Theme.StyleCheckBox(_autostartCheck);
+        y += row;
+        AddLabel(I18n.LabelTimeout, labelX, y, labelW, font);
+        _timeout = Edit(controlX, y, UiDpi.S(120), _settings.PopupTimeoutSec.ToString(), font);
 
-        _autoDirectionCheck = new CheckBox { Text = I18n.CheckAutoDirection, Checked = settings.AutoDetectDirection };
-        Theme.StyleCheckBox(_autoDirectionCheck);
+        y += row;
+        AddLabel(I18n.LabelHotkey, labelX, y, labelW, font);
+        _hotkey = Combo(controlX, y, controlW, font);
+        UiNative.ComboAdd(_hotkey, I18n.HotkeyDoubleCtrl);
+        UiNative.ComboAdd(_hotkey, I18n.HotkeyCtrlShift);
+        UiNative.ComboSelect(_hotkey, _settings.HotkeyMode == "ctrlShift" ? 1 : 0);
 
-        layout.Controls.Add(CreateLabel(I18n.LabelUiLanguage), 0, 0);
-        layout.Controls.Add(_uiLanguageCombo, 1, 0);
-        layout.Controls.Add(CreateLabel(I18n.LabelTargetLanguage), 0, 1);
-        layout.Controls.Add(_languageCombo, 1, 1);
-        layout.Controls.Add(CreateLabel(I18n.LabelTranslator), 0, 2);
-        layout.Controls.Add(_translatorCombo, 1, 2);
-        layout.Controls.Add(CreateLabel(I18n.LabelInterval), 0, 3);
-        layout.Controls.Add(_intervalBox, 1, 3);
-        layout.Controls.Add(CreateLabel(I18n.LabelTimeout), 0, 4);
-        layout.Controls.Add(_timeoutBox, 1, 4);
-        layout.Controls.Add(CreateLabel(I18n.LabelHotkey), 0, 5);
-        layout.Controls.Add(_hotkeyCombo, 1, 5);
+        y += row + UiDpi.S(6);
+        _copy = Check(I18n.CheckCopy, labelX, y, client.Width - UiDpi.S(36), _settings.CopyToClipboard, font);
+        y += row;
+        _autoDirection = Check(I18n.CheckAutoDirection, labelX, y, client.Width - UiDpi.S(36), _settings.AutoDetectDirection, font);
+        y += row;
+        _autostart = Check(I18n.CheckAutostart, labelX, y, client.Width - UiDpi.S(36), _settings.StartWithWindows, font);
 
-        layout.SetColumnSpan(_copyCheck, 2);
-        layout.Controls.Add(_copyCheck, 0, 6);
-        layout.SetColumnSpan(_autoDirectionCheck, 2);
-        layout.Controls.Add(_autoDirectionCheck, 0, 7);
-        layout.SetColumnSpan(_autostartCheck, 2);
-        layout.Controls.Add(_autostartCheck, 0, 8);
-
-        var buttons = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            FlowDirection = FlowDirection.RightToLeft,
-            WrapContents = false,
-            Padding = new Padding(0, 8, 0, 0)
-        };
-
-        var saveButton = Theme.CreateButton(I18n.Save, accent: true);
-        saveButton.Width = 128;
-        saveButton.Click += (_, _) => SaveAndClose();
-
-        var cancelButton = Theme.CreateButton(I18n.Cancel, accent: false);
-        cancelButton.Width = 110;
-        cancelButton.Click += (_, _) => Close();
-
-        buttons.Controls.Add(saveButton);
-        buttons.Controls.Add(cancelButton);
-        layout.SetColumnSpan(buttons, 2);
-        layout.Controls.Add(buttons, 0, 10);
-
-        Controls.Add(layout);
-        AcceptButton = saveButton;
-        CancelButton = cancelButton;
+        var buttonY = client.Height - UiDpi.S(52);
+        var buttonW = UiDpi.S(128);
+        UiNative.CreateControl("BUTTON", I18n.Cancel, UiNative.BS_PUSHBUTTON | UiNative.WS_TABSTOP,
+            client.Width - UiDpi.S(18) - buttonW - UiDpi.S(8) - UiDpi.S(110), buttonY, UiDpi.S(110), UiDpi.S(32),
+            Hwnd, UiNative.IDCANCEL, font);
+        UiNative.CreateControl("BUTTON", I18n.Save, UiNative.BS_DEFPUSHBUTTON | UiNative.WS_TABSTOP,
+            client.Width - UiDpi.S(18) - buttonW, buttonY, buttonW, UiDpi.S(32),
+            Hwnd, UiNative.IDOK, font);
     }
 
-    private static Label CreateLabel(string text) =>
-        new()
+    protected override void OnCommand(int id, int code, nint control)
+    {
+        if (id == UiNative.IDOK)
         {
-            Text = text,
-            AutoSize = true,
-            Font = Theme.Ui,
-            ForeColor = Theme.Text,
-            Anchor = AnchorStyles.Left,
-            TextAlign = ContentAlignment.MiddleLeft
-        };
+            SaveAndClose();
+        }
+        else if (id == UiNative.IDCANCEL)
+        {
+            CloseModal();
+        }
+    }
+
+    protected override nint OnColor(uint message, nint hdc, nint child)
+    {
+        if (message == UiNative.WM_CTLCOLORSTATIC)
+        {
+            return ColorStatic(hdc, UiTheme.Text);
+        }
+
+        if (message is UiNative.WM_CTLCOLOREDIT or UiNative.WM_CTLCOLORLISTBOX)
+        {
+            return ColorEdit(hdc, UiTheme.Text);
+        }
+
+        return 0;
+    }
 
     private void SaveAndClose()
     {
         try
         {
-            if (_languageCombo.SelectedItem is string selected)
+            var languageIndex = UiNative.ComboSelection(_language);
+            if (languageIndex >= 0 && languageIndex < Languages.Length)
             {
-                _settings.TargetLanguage = GetLanguageCode(selected);
+                _settings.TargetLanguage = GetLanguageCode(Languages[languageIndex]);
             }
 
-            _settings.UiLanguage = _uiLanguageCombo.SelectedIndex switch
+            _settings.UiLanguage = UiNative.ComboSelection(_uiLanguage) switch
             {
                 1 => "ru",
                 2 => "en",
                 _ => "auto"
             };
-            _settings.DoublePressIntervalMs = (int)_intervalBox.Value;
-            _settings.PopupTimeoutSec = (int)_timeoutBox.Value;
-            _settings.CopyToClipboard = _copyCheck.Checked;
-            _settings.StartWithWindows = _autostartCheck.Checked;
-            _settings.AutoDetectDirection = _autoDirectionCheck.Checked;
-            _settings.HotkeyMode = _hotkeyCombo.SelectedIndex == 1 ? "ctrlShift" : "doubleCtrl";
-            _settings.Translator = _translatorCombo.SelectedIndex switch
+            _settings.DoublePressIntervalMs = ReadInt(_interval, _settings.DoublePressIntervalMs);
+            _settings.PopupTimeoutSec = ReadInt(_timeout, _settings.PopupTimeoutSec);
+            _settings.CopyToClipboard = UiNative.IsChecked(_copy);
+            _settings.StartWithWindows = UiNative.IsChecked(_autostart);
+            _settings.AutoDetectDirection = UiNative.IsChecked(_autoDirection);
+            _settings.HotkeyMode = UiNative.ComboSelection(_hotkey) == 1 ? "ctrlShift" : "doubleCtrl";
+            _settings.Translator = UiNative.ComboSelection(_translator) switch
             {
                 1 => "yandex",
                 2 => "google",
@@ -198,22 +181,59 @@ internal sealed class SettingsDialog : Form
             };
             _settings.Save();
             I18n.ApplyPreference(_settings.UiLanguage);
-            DialogResult = DialogResult.OK;
-            Close();
+            CloseModal();
         }
         catch (Exception ex)
         {
             AppLogger.Error("Failed to save settings from the dialog.", ex);
-            MessageBox.Show(this, I18n.SettingsSaveFailed, I18n.ErrorTitle,
-                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            UiNative.Warn(Hwnd, I18n.SettingsSaveFailed, I18n.ErrorTitle);
         }
     }
 
-    private static string FindLanguageItem(string code)
+    private nint Combo(int x, int y, int width, nint font) =>
+        UiNative.CreateControl(
+            "COMBOBOX",
+            "",
+            UiNative.CBS_DROPDOWNLIST | UiNative.CBS_HASSTRINGS | UiNative.WS_VSCROLL | UiNative.WS_TABSTOP,
+            x,
+            y,
+            width,
+            UiDpi.S(240),
+            Hwnd,
+            200,
+            font);
+
+    private nint Edit(int x, int y, int width, string value, nint font)
+    {
+        var hwnd = UiNative.CreateControl("EDIT", value, UiNative.ES_NUMBER | UiNative.WS_TABSTOP, x, y, width, UiDpi.S(24), Hwnd, 201, font);
+        return hwnd;
+    }
+
+    private nint Check(string text, int x, int y, int width, bool value, nint font)
+    {
+        var hwnd = UiNative.CreateControl("BUTTON", text, UiNative.BS_AUTOCHECKBOX | UiNative.WS_TABSTOP, x, y, width, UiDpi.S(24), Hwnd, 202, font);
+        UiNative.SetChecked(hwnd, value);
+        return hwnd;
+    }
+
+    private void AddLabel(string text, int x, int y, int width, nint font) =>
+        UiNative.CreateControl("STATIC", text, UiNative.SS_NOPREFIX | UiNative.SS_CENTERIMAGE, x, y, width, UiDpi.S(24), Hwnd, 203, font);
+
+    private static int ReadInt(nint edit, int fallback) =>
+        int.TryParse(UiNative.GetText(edit), out var value) ? value : fallback;
+
+    private static int FindLanguageIndex(string code)
     {
         var prefix = code + " —";
-        return Languages.FirstOrDefault(item => item.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-               ?? Languages[0];
+        for (var i = 0; i < Languages.Length; i++)
+        {
+            if (Languages[i].StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return i;
+            }
+        }
+
+        return 0;
     }
 
     private static string GetLanguageCode(string item)

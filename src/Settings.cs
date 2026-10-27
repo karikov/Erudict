@@ -5,14 +5,6 @@ namespace ERuDict;
 
 internal sealed class Settings
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true,
-        WriteIndented = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-    };
-
     public string TargetLanguage { get; set; } = "ru";
     public int DoublePressIntervalMs { get; set; } = 400;
     public int PopupTimeoutSec { get; set; } = 8;
@@ -46,7 +38,7 @@ internal sealed class Settings
         try
         {
             var json = File.ReadAllText(path);
-            var loaded = JsonSerializer.Deserialize<Settings>(json, JsonOptions) ?? CreateDefaults();
+            var loaded = JsonSerializer.Deserialize(json, SettingsJsonContext.Default.Settings) ?? CreateDefaults();
             loaded.Normalize();
             return loaded;
         }
@@ -62,7 +54,7 @@ internal sealed class Settings
         try
         {
             Normalize();
-            File.WriteAllText(GetConfigPath(), JsonSerializer.Serialize(this, JsonOptions));
+            File.WriteAllText(GetConfigPath(), JsonSerializer.Serialize(this, SettingsJsonContext.Default.Settings));
             Autostart.Apply(StartWithWindows);
         }
         catch (Exception ex)
@@ -110,4 +102,14 @@ internal sealed class Settings
             _ => "auto"
         };
     }
+}
+
+[JsonSourceGenerationOptions(
+    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
+    PropertyNameCaseInsensitive = true,
+    WriteIndented = true,
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+[JsonSerializable(typeof(Settings))]
+internal partial class SettingsJsonContext : JsonSerializerContext
+{
 }

@@ -5,7 +5,7 @@ namespace ERuDict;
 
 /// <summary>
 /// Работает только с CF_UNICODETEXT. Не трогает RTF/HTML/OLE Outlook —
-/// их чтение через WinForms Clipboard часто роняет процесс.
+/// чтение RTF/HTML/OLE часто роняет процесс.
 /// </summary>
 internal static class NativeClipboard
 {

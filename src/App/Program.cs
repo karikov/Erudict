@@ -1,8 +1,14 @@
+using System.Runtime.InteropServices;
+
 namespace ERuDict;
 
 internal static class Program
 {
     private const string MutexName = @"Local\ERuDict_SingleInstance";
+    private const int ErrorAlreadyExists = 183;
+    private const int ErrorAccessDenied = 5;
+
+    private static nint _instanceMutex;
 
     [STAThread]
     private static void Main()
@@ -14,8 +20,7 @@ internal static class Program
             var settings = Settings.Load();
             I18n.ApplyPreference(settings.UiLanguage);
 
-            using var mutex = new Mutex(initiallyOwned: true, MutexName, out var createdNew);
-            if (!createdNew)
+            if (!TryAcquireInstance())
             {
                 UiNative.Info(I18n.AlreadyRunning, I18n.AppName);
                 return;
@@ -41,4 +46,34 @@ internal static class Program
             }
         }
     }
+
+    private static bool TryAcquireInstance()
+    {
+        SetLastError(0);
+        _instanceMutex = CreateMutex(0, false, MutexName);
+        var error = Marshal.GetLastWin32Error();
+        if (_instanceMutex == 0)
+        {
+            AppLogger.Error($"Не удалось занять единственный экземпляр. Win32={error}.");
+            return false;
+        }
+
+        if (error is ErrorAlreadyExists or ErrorAccessDenied)
+        {
+            CloseHandle(_instanceMutex);
+            _instanceMutex = 0;
+            return false;
+        }
+
+        return true;
+    }
+
+    [DllImport("kernel32.dll", EntryPoint = "CreateMutexW", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern nint CreateMutex(nint lpMutexAttributes, bool bInitialOwner, string lpName);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool CloseHandle(nint hObject);
+
+    [DllImport("kernel32.dll")]
+    private static extern void SetLastError(uint dwErrCode);
 }

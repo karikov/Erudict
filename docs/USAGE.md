@@ -23,7 +23,7 @@ ERuDict (English–Russian Dictionary) — фоновый переводчик �
 - **1–3 слова** — компактный тултип только с переводом. Кнопка **Развернуть** открывает большое окно с исходником.
 - **Длиннее** — сразу большое окно: исходный текст и перевод, направление (`EN → RU`) и сервис (`Яндекс` / `Google`).
 
-Закрыть окно: **Esc**, клик по рамке или ожидание автоскрытия.
+Короткий попап и перевод из словаря закрываются сами через время из настроек. Их также закрывает **Esc** и клик за пределами окна. Полный онлайн-перевод остаётся на экране, пока его не закроют кнопкой **Закрыть** или **Esc**.
 
 ### Направление перевода
 
@@ -83,7 +83,7 @@ Alternatively: right-click the tray icon → **Translate selection**.
 - **1–3 words** — a compact tooltip with the translation only. **Expand** opens the full popup with the original.
 - **Longer text** — the full popup: source, translation, direction (`EN → RU`) and engine (`Yandex` / `Google`).
 
-Close with **Esc**, a click on the frame, or wait for auto-hide.
+A short popup and an offline dictionary result hide themselves after the timeout from Settings. **Esc** and a click outside the window close them too. A full online translation stays on screen until you press **Close** or **Esc**.
 
 ### Direction
 

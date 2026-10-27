@@ -10,6 +10,8 @@ internal static class Win32
     public const int VkShift = 0x10;
     public const int VkC = 0x43;
     public const int VkEscape = 0x1B;
+    public const int VkLButton = 0x01;
+    public const int VkRButton = 0x02;
 
     public const int WhKeyboardLl = 13;
     public const int WmKeyDown = 0x0100;

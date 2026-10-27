@@ -6,11 +6,15 @@ internal sealed class PopupWindow : UiWindow
     private const int TimerEsc = 2;
     private const int TimerCopy = 3;
     private const int CopyButtonId = 101;
+    private const int CloseButtonId = 102;
 
     private readonly Settings _settings;
     private nint _sourceEdit;
     private nint _translationEdit;
     private nint _copyButton;
+    private nint _closeButton;
+    private bool _autoHide;
+    private bool _dismissOnOutside;
     private string _translationCaption = "";
     private string _hint = "";
     private bool _error;
@@ -18,7 +22,7 @@ internal sealed class PopupWindow : UiWindow
     private UiNative.Rect _translationCaptionRect;
     private UiNative.Rect _hintRect;
 
-    public PopupWindow(Settings settings, nint owner)
+    public PopupWindow(Settings settings)
     {
         _settings = settings;
         Create(
@@ -29,19 +33,23 @@ internal sealed class PopupWindow : UiWindow
             0,
             UiDpi.S(900),
             UiDpi.S(440),
-            owner);
+            0);
     }
 
-    public void ShowTranslation(string sourceText, string? translation, bool isError = false, string? directionLabel = null)
+    public void ShowTranslation(string sourceText, string? translation, bool isError = false, string? directionLabel = null, bool autoHide = false, bool dismissOnOutside = false)
     {
         _error = isError;
+        _autoHide = autoHide;
+        _dismissOnOutside = dismissOnOutside;
+        ArmOutsideClick();
         _translationCaption = string.IsNullOrWhiteSpace(directionLabel)
             ? I18n.TranslationCaption
             : I18n.TranslationCaption + "  ·  " + directionLabel;
-        _hint = I18n.PopupHint;
+        _hint = dismissOnOutside ? I18n.PopupHintOutside : I18n.PopupHint;
         UiNative.SetText(_sourceEdit, Truncate(sourceText, 600));
         UiNative.SetText(_translationEdit, translation ?? "");
         UiNative.SetText(_copyButton, I18n.Copy);
+        UiNative.SetText(_closeButton, I18n.Close);
         UiNative.EnableWindow(_copyButton, !isError && !string.IsNullOrWhiteSpace(translation));
 
         if (_settings.CopyToClipboard && !isError && !string.IsNullOrWhiteSpace(translation))
@@ -71,12 +79,11 @@ internal sealed class PopupWindow : UiWindow
         const uint editStyle = UiNative.ES_MULTILINE | UiNative.ES_AUTOVSCROLL | UiNative.ES_READONLY | UiNative.WS_VSCROLL;
         _sourceEdit = UiNative.CreateControl("EDIT", "", editStyle, 0, 0, 10, 10, Hwnd, 111, UiTheme.UiFont);
         _translationEdit = UiNative.CreateControl("EDIT", "", editStyle, 0, 0, 10, 10, Hwnd, 112, UiTheme.TranslationFont);
+        _closeButton = UiNative.CreateControl("BUTTON", I18n.Close, UiNative.BS_OWNERDRAW, 0, 0, 10, 10, Hwnd, CloseButtonId, UiTheme.SmallFont);
         _copyButton = UiNative.CreateControl("BUTTON", I18n.Copy, UiNative.BS_OWNERDRAW, 0, 0, 10, 10, Hwnd, CopyButtonId, UiTheme.SmallFont);
     }
 
     protected override void OnSize() => LayoutContent();
-
-    protected override void OnClick(int x, int y) => HidePopup();
 
     protected override bool OnClose()
     {
@@ -90,11 +97,21 @@ internal sealed class PopupWindow : UiWindow
         {
             CopyTranslation();
         }
+        else if (id == CloseButtonId)
+        {
+            HidePopup();
+        }
     }
 
     protected override void OnTimer(nint id)
     {
         if (id == TimerHide || id == TimerEsc && Win32.IsKeyDown(Win32.VkEscape))
+        {
+            HidePopup();
+            return;
+        }
+
+        if (id == TimerEsc && _dismissOnOutside && OutsideClick())
         {
             HidePopup();
             return;
@@ -137,14 +154,25 @@ internal sealed class PopupWindow : UiWindow
 
     protected override void OnDrawItem(UiNative.DrawItemStruct item)
     {
-        if (item.hwndItem != _copyButton)
+        if (item.hwndItem != _copyButton && item.hwndItem != _closeButton)
         {
             return;
         }
 
+        var accent = item.hwndItem == _copyButton;
         var pressed = (item.itemState & UiNative.ODS_SELECTED) != 0;
-        Fill(item.hDC, item.rcItem, pressed ? UiTheme.AccentHoverBrush : UiTheme.AccentBrush);
-        DrawText(item.hDC, UiNative.GetText(_copyButton), UiTheme.SmallFont, UiTheme.White, item.rcItem,
+        var brush = accent
+            ? (pressed ? UiTheme.AccentHoverBrush : UiTheme.AccentBrush)
+            : (pressed ? UiTheme.BorderBrush : UiTheme.SurfaceAltBrush);
+        Fill(item.hDC, item.rcItem, brush);
+        if (!accent)
+        {
+            var border = item.rcItem;
+            UiNative.FrameRect(item.hDC, ref border, UiTheme.BorderBrush);
+        }
+
+        var color = accent ? UiTheme.White : UiTheme.Text;
+        DrawText(item.hDC, UiNative.GetText(item.hwndItem), UiTheme.SmallFont, color, item.rcItem,
             UiNative.DT_CENTER | UiNative.DT_VCENTER | UiNative.DT_SINGLELINE);
     }
 
@@ -178,8 +206,12 @@ internal sealed class PopupWindow : UiWindow
 
         var buttonWidth = UiDpi.S(120);
         var buttonHeight = UiDpi.S(28);
-        UiNative.MoveWindow(_copyButton, left + inner - buttonWidth, y, buttonWidth, buttonHeight, true);
-        _hintRect = Line(left, y, inner - buttonWidth - UiDpi.S(12), buttonHeight);
+        var gap = UiDpi.S(8);
+        var copyX = left + inner - buttonWidth;
+        var closeX = copyX - gap - buttonWidth;
+        UiNative.MoveWindow(_closeButton, closeX, y, buttonWidth, buttonHeight, true);
+        UiNative.MoveWindow(_copyButton, copyX, y, buttonWidth, buttonHeight, true);
+        _hintRect = Line(left, y, Math.Max(UiDpi.S(40), closeX - left - gap), buttonHeight);
         UiNative.RoundWindow(Hwnd, client.Width, client.Height, UiDpi.S(8));
     }
 
@@ -187,7 +219,7 @@ internal sealed class PopupWindow : UiWindow
     {
         UiNative.SetTimer(Hwnd, TimerEsc, 80, 0);
         UiNative.KillTimer(Hwnd, TimerHide);
-        if (_settings.PopupTimeoutSec > 0)
+        if (_autoHide && _settings.PopupTimeoutSec > 0)
         {
             UiNative.SetTimer(Hwnd, TimerHide, (uint)(_settings.PopupTimeoutSec * 1000), 0);
         }

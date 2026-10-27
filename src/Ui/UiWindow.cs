@@ -15,6 +15,8 @@ internal class UiWindow : IDisposable
 
     protected nint Hwnd { get; private set; }
     private bool _modalClosed;
+    private bool _outsideArmed;
+    private bool _outsideWasDown;
 
     protected void Create(string? title, uint style, uint exStyle, int x, int y, int width, int height, nint owner)
     {
@@ -71,7 +73,18 @@ internal class UiWindow : IDisposable
         UiNative.UpdateWindow(Hwnd);
     }
 
-    protected void HideWindow() => UiNative.ShowWindow(Hwnd, UiNative.SW_HIDE);
+    protected void HideWindow()
+    {
+        UiNative.ShowWindow(Hwnd, UiNative.SW_HIDE);
+        UiNative.SetWindowPos(
+            Hwnd,
+            0,
+            0,
+            0,
+            0,
+            0,
+            UiNative.SWP_NOMOVE | UiNative.SWP_NOSIZE | UiNative.SWP_NOZORDER | UiNative.SWP_NOACTIVATE | UiNative.SWP_HIDEWINDOW);
+    }
 
     protected void ShowModal()
     {
@@ -142,6 +155,42 @@ internal class UiWindow : IDisposable
     protected virtual nint OnColor(uint message, nint hdc, nint child) => 0;
 
     protected virtual bool OnClose() => false;
+
+    protected void ArmOutsideClick()
+    {
+        var down = MouseDown();
+        _outsideArmed = !down;
+        _outsideWasDown = down;
+    }
+
+    protected bool OutsideClick()
+    {
+        var down = MouseDown();
+        if (!_outsideArmed)
+        {
+            if (!down)
+            {
+                _outsideArmed = true;
+            }
+
+            _outsideWasDown = down;
+            return false;
+        }
+
+        var pressed = down && !_outsideWasDown;
+        _outsideWasDown = down;
+        if (!pressed)
+        {
+            return false;
+        }
+
+        UiNative.GetCursorPos(out var cursor);
+        UiNative.GetWindowRect(Hwnd, out var window);
+        return !window.Contains(cursor.X, cursor.Y);
+    }
+
+    private static bool MouseDown() =>
+        Win32.IsKeyDown(Win32.VkLButton) || Win32.IsKeyDown(Win32.VkRButton);
 
     protected virtual void OnDestroy()
     {

@@ -67,7 +67,7 @@ internal static class I18n
     public static string LabelTargetLanguage => T("Translation language", "Язык перевода");
     public static string LabelTranslator => T("Translation service", "Сервис перевода");
     public static string LabelInterval => T("Double Ctrl interval, ms", "Интервал двойного Ctrl, мс");
-    public static string LabelTimeout => T("Popup auto-hide, sec", "Автоскрытие попапа, сек");
+    public static string LabelTimeout => T("Auto-hide, sec", "Автоскрытие, сек");
     public static string LabelHotkey => T("Hotkey", "Горячая клавиша");
     public static string CheckCopy => T("Copy translation to the clipboard", "Копировать перевод в буфер обмена");
     public static string CheckAutoDirection => T(
@@ -92,7 +92,8 @@ internal static class I18n
 
     public static string SourceCaption => T("SOURCE", "ИСХОДНЫЙ ТЕКСТ");
     public static string TranslationCaption => T("TRANSLATION", "ПЕРЕВОД");
-    public static string PopupHint => T("Esc or click outside the text to close", "Esc или клик вне текста — закрыть");
+    public static string PopupHint => T("Esc also closes", "Esc тоже закрывает");
+    public static string PopupHintOutside => T("Esc or a click outside", "Esc или клик снаружи");
     public static string Copy => T("Copy", "Копировать");
     public static string Copied => T("Copied", "Скопировано");
     public static string Expand => T("Expand", "Развернуть");
@@ -149,7 +150,8 @@ internal static class I18n
 
         Tips
         • The original clipboard is restored after capture (Unicode text).
-        • Esc, a click on the frame, or the timeout closes the popup.
+        • A short popup and an offline dictionary result close on their own after the timeout, with Esc, or with a click outside the window.
+        • A full online translation stays until you press Close or Esc.
         • Settings, Help, and Exit are in the tray icon menu.
         • Logs: erudict.log next to the executable.
         """;
@@ -182,7 +184,8 @@ internal static class I18n
 
         Подсказки
         • Прежний буфер обмена восстанавливается после захвата (Unicode-текст).
-        • Закрытие попапа: Esc, клик по рамке или таймаут.
+        • Короткий попап и перевод из словаря закрываются сами по таймауту, по Esc и по клику за пределами окна.
+        • Полный онлайн-перевод остаётся, пока его не закроют кнопкой «Закрыть» или Esc.
         • Настройки, помощь и выход — в меню иконки в трее.
         • Журнал: erudict.log рядом с программой.
         """;

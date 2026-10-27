@@ -14,6 +14,7 @@ internal sealed class HotkeyManager : IDisposable
     private bool _shiftWasDown;
     private long _lastPressTime;
     private long _lastTriggerTime;
+    private bool _suspended;
     private bool _disposed;
 
     public HotkeyManager(Settings settings, Action onTrigger)
@@ -41,6 +42,16 @@ internal sealed class HotkeyManager : IDisposable
         {
             AppLogger.Error("Не удалось установить клавиатурный хук.", new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error()));
         }
+    }
+
+    public void Suspend() => _suspended = true;
+
+    public void Resume()
+    {
+        _suspended = false;
+        _lastPressTime = 0;
+        _ctrlWasDown = Win32.IsKeyDown(Win32.VkControl) || Win32.IsKeyDown(Win32.VkLControl) || Win32.IsKeyDown(Win32.VkRControl);
+        _shiftWasDown = Win32.IsKeyDown(Win32.VkShift);
     }
 
     public void Stop()
@@ -84,6 +95,11 @@ internal sealed class HotkeyManager : IDisposable
 
     private void HandleKey(uint vkCode, bool isDown)
     {
+        if (_suspended)
+        {
+            return;
+        }
+
         var now = Environment.TickCount64;
         var ctrlDown = Win32.IsControl(vkCode) ? isDown : Win32.IsKeyDown(Win32.VkControl);
         var shiftDown = vkCode == Win32.VkShift ? isDown : Win32.IsKeyDown(Win32.VkShift);
@@ -112,6 +128,7 @@ internal sealed class HotkeyManager : IDisposable
     private void TryTrigger(long now)
     {
         _lastTriggerTime = now;
+        _lastPressTime = 0;
         _sync.Post(_ => _onTrigger(), null);
     }
 }

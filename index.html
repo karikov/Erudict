@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ERuDict — перевод выделенного текста</title>
+  <meta name="description" content="ERuDict сидит в трее Windows и переводит выделенный текст по двойному Ctrl. Яндекс, Google и офлайн-словарь. Без установки .NET.">
+  <link rel="icon" href="assets/app.ico">
+  <style>
+    :root {
+      --bg: #141311;
+      --bg-2: #1e1b18;
+      --card: #262320;
+      --line: #3c352f;
+      --text: #f6f1ea;
+      --muted: #b7aea3;
+      --accent: #e67e22;
+      --accent-ink: #2a1606;
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(900px 420px at 85% -10%, rgba(230, 126, 34, 0.18), transparent 60%),
+        linear-gradient(180deg, #1a1816 0%, var(--bg) 28%);
+      font-family: "Segoe UI", "Avenir Next", sans-serif;
+      line-height: 1.5;
+    }
+
+    a { color: inherit; }
+    .wrap { width: min(1080px, calc(100% - 40px)); margin: 0 auto; }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 0 8px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; letter-spacing: 0.01em; }
+    .mark {
+      width: 28px; height: 28px; border-radius: 8px;
+      background: var(--accent);
+      box-shadow: inset 0 0 0 3px #2a1606, inset 6px 0 0 #f5963a;
+    }
+    nav { display: flex; gap: 18px; color: var(--muted); font-size: 14px; }
+    nav a { text-decoration: none; }
+    nav a:hover { color: var(--text); }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 48px;
+      align-items: center;
+      padding: 42px 0 28px;
+    }
+    h1 {
+      margin: 0 0 16px;
+      font-family: Palatino, "Palatino Linotype", "Iowan Old Style", Georgia, serif;
+      font-size: clamp(40px, 5vw, 64px);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.02;
+    }
+    .lede { margin: 0 0 26px; max-width: 38em; color: var(--muted); font-size: 18px; }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 18px; }
+    .download {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      text-decoration: none;
+      font-weight: 700;
+      padding: 14px 18px;
+      border-radius: 999px;
+      box-shadow: 0 10px 30px rgba(230, 126, 34, 0.28);
+    }
+    .download:hover { background: #f5963a; }
+    .fine { color: var(--muted); font-size: 13px; }
+
+    .stage { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
+    .scene { position: relative; width: min(380px, 100%); padding: 16px 0 8px 22px; }
+    .cursor {
+      position: absolute; left: 0; top: 0;
+      width: 18px; height: 18px;
+      background: var(--text);
+      clip-path: polygon(0 0, 100% 70%, 58% 70%, 78% 100%, 58% 92%, 40% 68%, 0 68%);
+    }
+    .card {
+      position: relative;
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card:before {
+      content: "";
+      position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
+      background: var(--accent);
+    }
+    .card-body { padding: 18px 18px 14px 22px; }
+    .translation {
+      font-family: Palatino, "Palatino Linotype", Georgia, serif;
+      font-size: 28px;
+      line-height: 1.2;
+    }
+    .meta { margin-top: 14px; display: flex; justify-content: space-between; gap: 12px; align-items: center; color: var(--muted); font-size: 12px; }
+    .expand {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px 10px;
+      color: var(--text);
+    }
+    .keys { display: flex; gap: 8px; }
+    .key {
+      min-width: 64px;
+      text-align: center;
+      border: 1px solid var(--line);
+      border-bottom-width: 4px;
+      background: #2f2b27;
+      border-radius: 10px;
+      padding: 10px 12px 8px;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+    }
+
+    section { padding: 28px 0; }
+    h2 {
+      font-family: Palatino, "Palatino Linotype", Georgia, serif;
+      font-size: 34px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      margin: 0 0 18px;
+    }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .step, .perk {
+      background: rgba(38, 35, 32, 0.72);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px 18px 16px;
+    }
+    .num { color: var(--accent); font-variant-numeric: tabular-nums; font-size: 13px; letter-spacing: 0.12em; }
+    .step h3, .perk h3 { margin: 8px 0 6px; font-size: 18px; }
+    .step p, .perk p { margin: 0; color: var(--muted); }
+
+    .perks { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .perk strong { color: var(--text); }
+
+    .band {
+      margin: 18px 0 8px;
+      padding: 28px;
+      border-radius: 22px;
+      background:
+        linear-gradient(135deg, rgba(230, 126, 34, 0.16), transparent 42%),
+        var(--bg-2);
+      border: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: center;
+    }
+    .band p { margin: 8px 0 0; color: var(--muted); max-width: 40em; }
+
+    footer {
+      padding: 10px 0 36px;
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    footer a { color: var(--text); }
+
+    @media (max-width: 800px) {
+      .hero, .steps, .perks, .band, footer { display: block; }
+      header { align-items: flex-start; }
+      nav { display: none; }
+      .stage { margin-top: 28px; }
+      .band { padding: 22px; }
+      .band .download { margin-top: 16px; }
+      footer { padding-top: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand"><span class="mark" aria-hidden="true"></span> ERuDict</div>
+      <nav>
+        <a href="#how">Как это работает</a>
+        <a href="#why">Зачем</a>
+        <a href="#download">Скачать</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <h1>Выделил текст.<br>Дважды Ctrl.<br>Перевод уже здесь.</h1>
+          <p class="lede">ERuDict живёт в трее Windows и переводит то, что выделено в любом окне: браузере, письме, редакторе, терминале. Не нужно копировать фразу в чужой сайт.</p>
+          <div class="actions">
+            <a class="download" href="https://github.com/karikov/Erudict/releases/latest/download/ERuDict-Setup.exe">Скачать установщик</a>
+            <span class="fine">Windows 10/11, 64-bit · без прав администратора · около 5 МБ</span>
+          </div>
+        </div>
+        <div class="stage" aria-hidden="true">
+          <div class="keys"><div class="key">CTRL</div><div class="key">CTRL</div></div>
+          <div class="scene">
+          <div class="cursor"></div>
+          <article class="card">
+            <div class="card-body">
+              <div class="translation">крайний срок</div>
+              <div class="meta">
+                <span>EN → RU · Яндекс</span>
+                <span class="expand">Развернуть</span>
+              </div>
+            </div>
+          </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="how">
+        <h2>Три движения, и вы снова в своём тексте</h2>
+        <div class="steps">
+          <article class="step">
+            <div class="num">01</div>
+            <h3>Выделите</h3>
+            <p>Любой фрагмент в том окне, где вы уже работаете.</p>
+          </article>
+          <article class="step">
+            <div class="num">02</div>
+            <h3>Дважды нажмите Ctrl</h3>
+            <p>Или Ctrl+Shift, если так спокойнее среди других программ.</p>
+          </article>
+          <article class="step">
+            <div class="num">03</div>
+            <h3>Прочитайте у курсора</h3>
+            <p>Короткое слово вспыхивает карточкой. Длинный текст открывается целиком.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="why">
+        <h2>Сделан так, чтобы не мешать</h2>
+        <div class="perks">
+          <article class="perk">
+            <h3>Онлайн, а если сети нет — словарь</h3>
+            <p>Сначала Яндекс, при сбое Google. Ключ API не нужен. Когда оба молчат, слова переводятся локальным словарём FreeDict.</p>
+          </article>
+          <article class="perk">
+            <h3>Короткое само уходит, длинное ждёт</h3>
+            <p>Карточка на пару слов и перевод из словаря закрываются по таймеру, по Esc или кликом мимо окна. Полный онлайн-перевод остаётся, пока вы сами не нажмёте «Закрыть».</p>
+          </article>
+          <article class="perk">
+            <h3>Буфер обмена остаётся вашим</h3>
+            <p>Программа ненадолго берёт выделенный текст и возвращает то, что было скопировано до неё.</p>
+          </article>
+          <article class="perk">
+            <h3>Один тихий процесс</h3>
+            <p>Повторный запуск не плодит вторую копию. Интерфейс по-русски или по-английски, как в Windows. .NET ставить не нужно: это маленькая родная программа.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="download" class="band">
+        <div>
+          <h2>Поставить в свою папку</h2>
+          <p>Установщик кладёт ERuDict в папку пользователя и добавляет ярлык в меню Пуск. Права администратора не спрашивает. Автозагрузку можно включить тут же или позже, в настройках программы.</p>
+        </div>
+        <a class="download" href="https://github.com/karikov/Erudict/releases/latest/download/ERuDict-Setup.exe">Скачать ERuDict</a>
+      </section>
+    </main>
+
+    <footer>
+      <span>ERuDict · English–Russian Dictionary</span>
+      <a href="https://github.com/karikov/Erudict">Код на GitHub</a>
+    </footer>
+  </div>
+</body>
+</html>

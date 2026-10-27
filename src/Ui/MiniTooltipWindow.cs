@@ -10,13 +10,16 @@ internal sealed class MiniTooltipWindow : UiWindow
     private string _translation = "";
     private string? _direction;
     private bool _error;
+    private bool _autoHide;
+    private bool _dismissOnOutside;
+    private long _ignoreClicksUntil;
     private UiNative.Rect _textRect;
     private UiNative.Rect _directionRect;
     private UiNative.Rect _buttonRect;
 
     public event Action<string, string, bool, string?>? ExpandRequested;
 
-    public MiniTooltipWindow(Settings settings, nint owner)
+    public MiniTooltipWindow(Settings settings)
     {
         _settings = settings;
         Create(
@@ -27,15 +30,19 @@ internal sealed class MiniTooltipWindow : UiWindow
             0,
             UiDpi.S(280),
             UiDpi.S(72),
-            owner);
+            0);
     }
 
-    public void ShowTranslation(string sourceText, string? translation, bool isError, string? directionLabel)
+    public void ShowTranslation(string sourceText, string? translation, bool isError, string? directionLabel, bool autoHide = false, bool dismissOnOutside = false)
     {
         _sourceText = sourceText;
         _translation = string.IsNullOrWhiteSpace(translation) ? "—" : translation;
         _direction = directionLabel;
         _error = isError;
+        _autoHide = autoHide;
+        _dismissOnOutside = dismissOnOutside;
+        _ignoreClicksUntil = Environment.TickCount64 + 250;
+        ArmOutsideClick();
 
         if (_settings.CopyToClipboard && !isError && !string.IsNullOrWhiteSpace(translation))
         {
@@ -49,7 +56,7 @@ internal sealed class MiniTooltipWindow : UiWindow
         UiNative.InvalidateRect(Hwnd, 0, true);
         UiNative.SetTimer(Hwnd, TimerEsc, 80, 0);
         UiNative.KillTimer(Hwnd, TimerHide);
-        if (_settings.PopupTimeoutSec > 0)
+        if (_autoHide && _settings.PopupTimeoutSec > 0)
         {
             UiNative.SetTimer(Hwnd, TimerHide, (uint)(_settings.PopupTimeoutSec * 1000), 0);
         }
@@ -73,19 +80,27 @@ internal sealed class MiniTooltipWindow : UiWindow
         if (id == TimerHide || id == TimerEsc && Win32.IsKeyDown(Win32.VkEscape))
         {
             HideTooltip();
+            return;
+        }
+
+        if (id == TimerEsc && _dismissOnOutside && OutsideClick())
+        {
+            HideTooltip();
         }
     }
 
     protected override void OnClick(int x, int y)
     {
+        if (Environment.TickCount64 < _ignoreClicksUntil)
+        {
+            return;
+        }
+
         if (_buttonRect.Contains(x, y))
         {
             HideTooltip();
             ExpandRequested?.Invoke(_sourceText, _translation == "—" ? "" : _translation, _error, _direction);
-            return;
         }
-
-        HideTooltip();
     }
 
     protected override nint HandleMessage(uint message, nint wParam, nint lParam)

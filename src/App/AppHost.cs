@@ -21,15 +21,16 @@ internal sealed class AppHost : UiWindow
         _settings = settings;
         Create(
             "ERuDict",
-            UiNative.WS_OVERLAPPED,
+            UiNative.WS_POPUP,
             UiNative.WS_EX_TOOLWINDOW | UiNative.WS_EX_NOACTIVATE,
             -32000,
             -32000,
-            1,
-            1,
+            0,
+            0,
             0);
-        _popup = new PopupWindow(settings, Hwnd);
-        _miniTooltip = new MiniTooltipWindow(settings, Hwnd);
+        HideWindow();
+        _popup = new PopupWindow(settings);
+        _miniTooltip = new MiniTooltipWindow(settings);
         _miniTooltip.ExpandRequested += (source, translation, isError, direction) =>
             SafeShowPopup(source, translation, isError, direction, forceFull: true);
     }
@@ -142,6 +143,7 @@ internal sealed class AppHost : UiWindow
         }
 
         _translating = true;
+        _hotkeys?.Suspend();
         try
         {
             var text = await ClipboardManager.GetSelectedTextAsync();
@@ -159,7 +161,8 @@ internal sealed class AppHost : UiWindow
                     direction.TargetLanguage,
                     _settings.Translator);
                 var label = direction.Label + " · " + outcome.EngineLabel;
-                SafeShowPopup(text, outcome.Text, isError: false, label, forceFull: outcome.Engine == "offline");
+                var offline = outcome.Engine == "offline";
+                SafeShowPopup(text, outcome.Text, isError: false, label, forceFull: offline, autoHide: offline);
             }
             catch (Exception ex)
             {
@@ -174,25 +177,28 @@ internal sealed class AppHost : UiWindow
         }
         finally
         {
+            _hotkeys?.Resume();
             _translating = false;
         }
     }
 
-    private void SafeShowPopup(string source, string? message, bool isError, string? directionLabel = null, bool forceFull = false)
+    private void SafeShowPopup(string source, string? message, bool isError, string? directionLabel = null, bool forceFull = false, bool autoHide = false)
     {
         try
         {
+            _popup.HidePopup();
+            _miniTooltip.HideTooltip();
             var useMini = !forceFull && TextMetrics.PreferMiniTooltip(source);
             if (useMini)
             {
-                _popup.HidePopup();
-                _miniTooltip.ShowTranslation(source, message, isError, directionLabel);
+                _miniTooltip.ShowTranslation(source, message, isError, directionLabel, autoHide: !isError, dismissOnOutside: true);
             }
             else
             {
-                _miniTooltip.HideTooltip();
-                _popup.ShowTranslation(source, message, isError, directionLabel);
+                _popup.ShowTranslation(source, message, isError, directionLabel, autoHide, dismissOnOutside: autoHide);
             }
+
+            HideWindow();
         }
         catch (Exception ex)
         {

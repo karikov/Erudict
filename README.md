@@ -2,6 +2,8 @@
 
 **ERuDict** (English–Russian Dictionary) — фоновый переводчик выделенного текста для Windows.
 
+Страница программы: [index.html](index.html). Установщик для Windows: [скачать](https://github.com/karikov/Erudict/releases/latest/download/ERuDict-Setup.exe).
+
 Работает в системном трее. Двойной `Ctrl` переводит выделение через Яндекс или Google и показывает результат у курсора.
 
 Полная инструкция: [docs/USAGE.md](docs/USAGE.md) (русский и English).  

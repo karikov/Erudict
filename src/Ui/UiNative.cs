@@ -81,6 +81,7 @@ internal static class UiNative
     public const uint SWP_NOZORDER = 0x0004;
     public const uint SWP_NOACTIVATE = 0x0010;
     public const uint SWP_SHOWWINDOW = 0x0040;
+    public const uint SWP_HIDEWINDOW = 0x0080;
     public static readonly nint HWND_TOPMOST = -1;
 
     public const uint DT_CENTER = 0x0001;
@@ -189,7 +190,9 @@ internal static class UiNative
         public nint hIcon;
         public nint hCursor;
         public nint hbrBackground;
+        [MarshalAs(UnmanagedType.LPWStr)]
         public string? lpszMenuName;
+        [MarshalAs(UnmanagedType.LPWStr)]
         public string lpszClassName;
         public nint hIconSm;
     }
@@ -225,15 +228,15 @@ internal static class UiNative
         public uint dwICC;
     }
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [DllImport("user32.dll", EntryPoint = "RegisterClassExW", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern ushort RegisterClassEx(ref WndClassEx lpwcx);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [DllImport("user32.dll", EntryPoint = "CreateWindowExW", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern nint CreateWindowEx(
         uint dwExStyle, string lpClassName, string? lpWindowName, uint dwStyle,
         int x, int y, int nWidth, int nHeight, nint hWndParent, nint hMenu, nint hInstance, nint lpParam);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", EntryPoint = "DefWindowProcW")]
     public static extern nint DefWindowProc(nint hWnd, uint msg, nint wParam, nint lParam);
 
     [DllImport("user32.dll")]
@@ -269,17 +272,17 @@ internal static class UiNative
     [DllImport("user32.dll")]
     public static extern nint SetFocus(nint hWnd);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    [DllImport("user32.dll", EntryPoint = "SetWindowTextW", CharSet = CharSet.Unicode)]
     public static extern bool SetWindowText(nint hWnd, string text);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    [DllImport("user32.dll", EntryPoint = "GetWindowTextW", CharSet = CharSet.Unicode)]
     public static extern int GetWindowText(nint hWnd, StringBuilder lpString, int nMaxCount);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    [DllImport("user32.dll", EntryPoint = "GetWindowTextLengthW")]
     public static extern int GetWindowTextLength(nint hWnd);
 
     [DllImport("user32.dll", EntryPoint = "SendMessageW", CharSet = CharSet.Unicode)]
-    public static extern nint SendMessage(nint hWnd, uint msg, nint wParam, string? lParam);
+    public static extern nint SendMessage(nint hWnd, uint msg, nint wParam, [MarshalAs(UnmanagedType.LPWStr)] string? lParam);
 
     [DllImport("user32.dll", EntryPoint = "SendMessageW")]
     public static extern nint SendMessage(nint hWnd, uint msg, nint wParam, nint lParam);
@@ -290,16 +293,16 @@ internal static class UiNative
     [DllImport("user32.dll")]
     public static extern void PostQuitMessage(int exitCode);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", EntryPoint = "GetMessageW")]
     public static extern int GetMessage(out Msg msg, nint hWnd, uint filterMin, uint filterMax);
 
     [DllImport("user32.dll")]
     public static extern bool TranslateMessage(ref Msg msg);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", EntryPoint = "DispatchMessageW")]
     public static extern nint DispatchMessage(ref Msg msg);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", EntryPoint = "IsDialogMessageW")]
     public static extern bool IsDialogMessage(nint hDlg, ref Msg msg);
 
     [DllImport("user32.dll")]
@@ -320,8 +323,8 @@ internal static class UiNative
     [DllImport("user32.dll")]
     public static extern int FrameRect(nint hdc, ref Rect rect, nint brush);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    public static extern int DrawText(nint hdc, string text, int length, ref Rect rect, uint format);
+    [DllImport("user32.dll", EntryPoint = "DrawTextW", CharSet = CharSet.Unicode)]
+    public static extern int DrawText(nint hdc, [MarshalAs(UnmanagedType.LPWStr)] string text, int length, ref Rect rect, uint format);
 
     [DllImport("user32.dll")]
     public static extern bool InvalidateRect(nint hWnd, nint rect, bool erase);
@@ -353,8 +356,8 @@ internal static class UiNative
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern nint CreatePopupMenu();
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    public static extern bool AppendMenu(nint menu, uint flags, nuint idNewItem, string? text);
+    [DllImport("user32.dll", EntryPoint = "AppendMenuW", CharSet = CharSet.Unicode)]
+    public static extern bool AppendMenu(nint menu, uint flags, nuint idNewItem, [MarshalAs(UnmanagedType.LPWStr)] string? text);
 
     [DllImport("user32.dll")]
     public static extern int TrackPopupMenu(nint menu, uint flags, int x, int y, int reserved, nint hwnd, nint rect);
@@ -362,13 +365,13 @@ internal static class UiNative
     [DllImport("user32.dll")]
     public static extern bool DestroyMenu(nint menu);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    public static extern int MessageBox(nint owner, string text, string caption, uint type);
+    [DllImport("user32.dll", EntryPoint = "MessageBoxW", CharSet = CharSet.Unicode)]
+    public static extern int MessageBox(nint owner, [MarshalAs(UnmanagedType.LPWStr)] string text, [MarshalAs(UnmanagedType.LPWStr)] string caption, uint type);
 
     [DllImport("gdi32.dll")]
     public static extern nint CreateSolidBrush(int color);
 
-    [DllImport("gdi32.dll", CharSet = CharSet.Unicode)]
+    [DllImport("gdi32.dll", EntryPoint = "CreateFontW", CharSet = CharSet.Unicode)]
     public static extern nint CreateFont(
         int height, int width, int escapement, int orientation, int weight,
         uint italic, uint underline, uint strikeOut,

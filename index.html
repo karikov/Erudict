@@ -4,8 +4,56 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ERuDict — перевод выделенного текста</title>
-  <meta name="description" content="ERuDict сидит в трее Windows и переводит выделенный текст по двойному Ctrl. Яндекс, Google и офлайн-словарь. Без установки .NET.">
+  <meta name="description" content="ERuDict переводит выделенный текст прямо у курсора по двойному нажатию Ctrl. Яндекс, Google и офлайн-словарь в лёгком приложении для Windows.">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#141311">
+  <link rel="canonical" href="https://erudict.onsiter.by/">
   <link rel="icon" href="assets/app.ico">
+
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:site_name" content="ERuDict">
+  <meta property="og:title" content="ERuDict — перевод рядом, и мысль не теряется">
+  <meta property="og:description" content="Выделите текст, дважды нажмите Ctrl и прочитайте перевод прямо у курсора. Лёгкое приложение для Windows с онлайн- и офлайн-переводом.">
+  <meta property="og:url" content="https://erudict.onsiter.by/">
+  <meta property="og:image" content="https://erudict.onsiter.by/assets/social-preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="ERuDict — перевод рядом, и мысль не теряется">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ERuDict — перевод выделенного текста">
+  <meta name="twitter:description" content="Перевод у курсора по двойному нажатию Ctrl. Для Windows, без установленного .NET.">
+  <meta name="twitter:image" content="https://erudict.onsiter.by/assets/social-preview.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ERuDict",
+    "alternateName": "English–Russian Dictionary",
+    "description": "Лёгкий переводчик выделенного текста для Windows. Показывает перевод у курсора по двойному нажатию Ctrl.",
+    "url": "https://erudict.onsiter.by/",
+    "image": "https://erudict.onsiter.by/assets/social-preview.png",
+    "downloadUrl": "https://github.com/karikov/Erudict/releases/latest/download/ERuDict-Setup.exe",
+    "softwareVersion": "1.2.0",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Windows 10, Windows 11",
+    "inLanguage": ["ru", "en"],
+    "isAccessibleForFree": true,
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Organization",
+      "name": "OnSiter",
+      "email": "info@onsiter.by",
+      "url": "https://onsiter.by/"
+    }
+  }
+  </script>
   <style>
     :root {
       --bg: #141311;
@@ -176,6 +224,7 @@
       gap: 12px;
     }
     footer a { color: var(--text); }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 12px 20px; }
 
     @media (max-width: 800px) {
       .hero, .steps, .perks, .band, footer { display: block; }
@@ -185,6 +234,7 @@
       .band { padding: 22px; }
       .band .download { margin-top: 16px; }
       footer { padding-top: 22px; }
+      .footer-links { margin-top: 8px; }
     }
   </style>
 </head>
@@ -194,7 +244,7 @@
       <div class="brand"><span class="mark" aria-hidden="true"></span> ERuDict</div>
       <nav>
         <a href="#how">Как это работает</a>
-        <a href="#why">Зачем</a>
+        <a href="#why">Возможности</a>
         <a href="#download">Скачать</a>
       </nav>
     </header>
@@ -202,11 +252,11 @@
     <main>
       <section class="hero">
         <div>
-          <h1>Выделил текст.<br>Дважды Ctrl.<br>Перевод уже здесь.</h1>
-          <p class="lede">ERuDict живёт в трее Windows и переводит то, что выделено в любом окне: браузере, письме, редакторе, терминале. Не нужно копировать фразу в чужой сайт.</p>
+          <h1>Перевод рядом —<br>и мысль не теряется.</h1>
+          <p class="lede">Выделите незнакомую фразу и дважды нажмите Ctrl. ERuDict покажет перевод у курсора, не заставляя вас покидать письмо, статью, документ или рабочий чат.</p>
           <div class="actions">
             <a class="download" href="https://github.com/karikov/Erudict/releases/latest/download/ERuDict-Setup.exe">Скачать установщик</a>
-            <span class="fine">Windows 10/11, 64-bit · без прав администратора · около 5 МБ</span>
+            <span class="fine">Windows 10/11, 64-bit · без прав администратора · 5 МБ</span>
           </div>
         </div>
         <div class="stage" aria-hidden="true">
@@ -227,52 +277,52 @@
       </section>
 
       <section id="how">
-        <h2>Три движения, и вы снова в своём тексте</h2>
+        <h2>Перевод без лишнего путешествия по окнам</h2>
         <div class="steps">
           <article class="step">
             <div class="num">01</div>
-            <h3>Выделите</h3>
-            <p>Любой фрагмент в том окне, где вы уже работаете.</p>
+            <h3>Выделите текст</h3>
+            <p>Слово, короткую фразу или целый абзац — прямо там, где вы его встретили.</p>
           </article>
           <article class="step">
             <div class="num">02</div>
             <h3>Дважды нажмите Ctrl</h3>
-            <p>Или Ctrl+Shift, если так спокойнее среди других программ.</p>
+            <p>ERuDict заметит жест и возьмёт выделение в работу. При желании можно выбрать сочетание Ctrl+Shift.</p>
           </article>
           <article class="step">
             <div class="num">03</div>
-            <h3>Прочитайте у курсора</h3>
-            <p>Короткое слово вспыхивает карточкой. Длинный текст открывается целиком.</p>
+            <h3>Продолжайте читать</h3>
+            <p>Перевод появится рядом с курсором: компактно для пары слов и развёрнуто для длинного текста.</p>
           </article>
         </div>
       </section>
 
       <section id="why">
-        <h2>Сделан так, чтобы не мешать</h2>
+        <h2>Незаметен в работе, полезен в нужный момент</h2>
         <div class="perks">
           <article class="perk">
-            <h3>Онлайн, а если сети нет — словарь</h3>
-            <p>Сначала Яндекс, при сбое Google. Ключ API не нужен. Когда оба молчат, слова переводятся локальным словарём FreeDict.</p>
+            <h3>Находит путь к переводу</h3>
+            <p>В автоматическом режиме ERuDict обращается к Яндексу, а при сбое — к Google. API-ключи не нужны. Если сети нет, отдельные слова подхватит локальный словарь FreeDict.</p>
           </article>
           <article class="perk">
-            <h3>Короткое само уходит, длинное ждёт</h3>
-            <p>Карточка на пару слов и перевод из словаря закрываются по таймеру, по Esc или кликом мимо окна. Полный онлайн-перевод остаётся, пока вы сами не нажмёте «Закрыть».</p>
+            <h3>Показывает ровно столько, сколько нужно</h3>
+            <p>Короткий перевод появляется лёгкой карточкой и сам исчезает. Развёрнутый результат остаётся перед глазами, пока вы не закончите с ним.</p>
           </article>
           <article class="perk">
-            <h3>Буфер обмена остаётся вашим</h3>
-            <p>Программа ненадолго берёт выделенный текст и возвращает то, что было скопировано до неё.</p>
+            <h3>Бережёт привычный рабочий ритм</h3>
+            <p>Программа ненадолго использует буфер обмена, получает выделенный текст и возвращает прежнее содержимое. Ваши скопированные данные остаются на месте.</p>
           </article>
           <article class="perk">
-            <h3>Один тихий процесс</h3>
-            <p>Повторный запуск не плодит вторую копию. Интерфейс по-русски или по-английски, как в Windows. .NET ставить не нужно: это маленькая родная программа.</p>
+            <h3>Живёт тихо и весит мало</h3>
+            <p>ERuDict занимает место в системном трее, не запускает лишних копий и не требует установленного .NET. Интерфейс говорит по-русски или по-английски — в тон вашей Windows.</p>
           </article>
         </div>
       </section>
 
       <section id="download" class="band">
         <div>
-          <h2>Поставить в свою папку</h2>
-          <p>Установщик кладёт ERuDict в папку пользователя и добавляет ярлык в меню Пуск. Права администратора не спрашивает. Автозагрузку можно включить тут же или позже, в настройках программы.</p>
+          <h2>Один раз установить — и всегда иметь под рукой</h2>
+          <p>Установщик разместит ERuDict в вашей пользовательской папке и добавит ярлык в меню «Пуск». Права администратора не понадобятся. Автозапуск можно включить при установке или позже в настройках.</p>
         </div>
         <a class="download" href="https://github.com/karikov/Erudict/releases/latest/download/ERuDict-Setup.exe">Скачать ERuDict</a>
       </section>
@@ -280,7 +330,10 @@
 
     <footer>
       <span>ERuDict · English–Russian Dictionary</span>
-      <a href="https://github.com/karikov/Erudict">Код на GitHub</a>
+      <span class="footer-links">
+        <span>Вопросы и предложения: <a href="mailto:info@onsiter.by">info@onsiter.by</a></span>
+        <a href="https://github.com/karikov/Erudict">Код на GitHub</a>
+      </span>
     </footer>
   </div>
 </body>
